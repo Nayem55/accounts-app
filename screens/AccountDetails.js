@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -10,84 +10,100 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
+import { AccountsContext } from "../App"; // Ensure this path matches your project structure
 
 export default function AccountDetails({ route, navigation }) {
   const { accountId } = route.params;
+  const { accounts, updateAccounts } = useContext(AccountsContext) || {};
   const [account, setAccount] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [particular, setParticular] = useState("");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("credit");
+  const [editingIndex, setEditingIndex] = useState(null);
 
   useEffect(() => {
-    loadAccount();
-  }, []);
-
-  const loadAccount = async () => {
-    try {
-      const storedAccounts = await AsyncStorage.getItem("accounts");
-      if (storedAccounts) {
-        const accounts = JSON.parse(storedAccounts);
-        const foundAccount = accounts.find((acc) => acc.id === accountId);
-        setAccount(
-          foundAccount || { id: accountId, name: "New Account", transactions: [] }
-        );
-      }
-    } catch (err) {
-      Alert.alert("Error", "Failed to load account");
+    if (!accounts) {
+      Alert.alert("Error", "Accounts context not available");
+      return;
     }
-  };
+    const foundAccount = accounts.find((acc) => acc.id === accountId);
+    setAccount(
+      foundAccount || { id: accountId, name: "New Account", transactions: [] }
+    );
+  }, [accounts, accountId]);
 
-  const saveAccounts = async (updatedAccounts) => {
-    try {
-      await AsyncStorage.setItem("accounts", JSON.stringify(updatedAccounts));
-    } catch (err) {
-      Alert.alert("Error", "Failed to save accounts");
+  const addTransaction = () => {
+    if (!particular || !amount || isNaN(parseFloat(amount))) {
+      Alert.alert("Error", "Please enter a valid particular and amount.");
+      return;
     }
-  };
 
-  const addTransaction = async () => {
-    if (!particular || !amount) return;
-    const updatedTransaction = {
+    const newTransaction = {
       date: new Date(),
       particular,
       credit: type === "credit" ? parseFloat(amount) : 0,
       debit: type === "debit" ? parseFloat(amount) : 0,
     };
 
-    const stored = await AsyncStorage.getItem("accounts");
-    const accounts = stored ? JSON.parse(stored) : [];
-
     const updatedAccounts = accounts.map((acc) =>
       acc.id === accountId
-        ? { ...acc, transactions: [...acc.transactions, updatedTransaction] }
+        ? { ...acc, transactions: [...acc.transactions, newTransaction] }
         : acc
     );
 
-    saveAccounts(updatedAccounts);
-
+    updateAccounts(updatedAccounts);
     setAccount((prev) => ({
       ...prev,
-      transactions: [...prev.transactions, updatedTransaction],
+      transactions: [...prev.transactions, newTransaction],
     }));
 
-    setModalVisible(false);
-    setParticular("");
-    setAmount("");
+    resetModal();
   };
 
-  const deleteTransaction = async (index) => {
-    Alert.alert("Delete", "Are you sure you want to delete this?", [
+  const editTransaction = () => {
+    if (!particular || !amount || isNaN(parseFloat(amount))) {
+      Alert.alert("Error", "Please enter a valid particular and amount.");
+      return;
+    }
+
+    const updatedTransaction = {
+      date: editingIndex !== null ? account.transactions[editingIndex].date : new Date(), // Preserve original date
+      particular,
+      credit: type === "credit" ? parseFloat(amount) : 0,
+      debit: type === "debit" ? parseFloat(amount) : 0,
+    };
+
+    const updatedAccounts = accounts.map((acc) =>
+      acc.id === accountId
+        ? {
+            ...acc,
+            transactions: acc.transactions.map((t, i) =>
+              i === editingIndex ? updatedTransaction : t
+            ),
+          }
+        : acc
+    );
+
+    updateAccounts(updatedAccounts);
+    setAccount((prev) => ({
+      ...prev,
+      transactions: prev.transactions.map((t, i) =>
+        i === editingIndex ? updatedTransaction : t
+      ),
+    }));
+
+    resetModal();
+  };
+
+  const deleteTransaction = (index) => {
+    Alert.alert("Delete Transaction", "Are you sure you want to delete this?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
-        onPress: async () => {
-          const stored = await AsyncStorage.getItem("accounts");
-          const accounts = stored ? JSON.parse(stored) : [];
-
+        onPress: () => {
           const updatedAccounts = accounts.map((acc) =>
             acc.id === accountId
               ? {
@@ -97,8 +113,7 @@ export default function AccountDetails({ route, navigation }) {
               : acc
           );
 
-          saveAccounts(updatedAccounts);
-
+          updateAccounts(updatedAccounts);
           setAccount((prev) => ({
             ...prev,
             transactions: prev.transactions.filter((_, i) => i !== index),
@@ -106,6 +121,14 @@ export default function AccountDetails({ route, navigation }) {
         },
       },
     ]);
+  };
+
+  const resetModal = () => {
+    setModalVisible(false);
+    setParticular("");
+    setAmount("");
+    setType("credit");
+    setEditingIndex(null);
   };
 
   if (!account) return <Text>Loading...</Text>;
@@ -118,25 +141,54 @@ export default function AccountDetails({ route, navigation }) {
   const balance = credit - debit;
 
   const renderTransaction = ({ item, index }) => (
-    <TouchableOpacity
-      onLongPress={() => deleteTransaction(index)}
-      style={styles.transactionCard}
-    >
-      <View style={styles.transactionHeader}>
-        <Text style={styles.dateText}>
-          {moment(item.date).format("DD MMM YYYY")}
-        </Text>
-        <Text style={styles.particularText}>{item.particular}</Text>
+    <View style={styles.transactionCard}>
+      <TouchableOpacity
+        onPress={() => {
+          setEditingIndex(index);
+          setParticular(item.particular);
+          setAmount((item.credit || item.debit).toString());
+          setType(item.credit ? "credit" : "debit");
+          setModalVisible(true);
+        }}
+      >
+        <View style={styles.transactionHeader}>
+          <Text style={styles.dateText}>
+            {moment(item.date).format("DD MMM YYYY")}
+          </Text>
+          <Text style={styles.particularText}>{item.particular}</Text>
+        </View>
+        <View style={styles.amountRow}>
+          <Text style={styles.creditText}>
+            {item.credit ? `+ ৳ ${item.credit.toFixed(2)}` : ""}
+          </Text>
+          <Text style={styles.debitText}>
+            {item.debit ? `- ৳ ${item.debit.toFixed(2)}` : ""}
+          </Text>
+        </View>
+      </TouchableOpacity>
+      <View style={styles.transactionActions}>
+        <Ionicons
+          name="pencil"
+          size={20}
+          color="#007C00"
+          onPress={() => {
+            setEditingIndex(index);
+            setParticular(item.particular);
+            setAmount((item.credit || item.debit).toString());
+            setType(item.credit ? "credit" : "debit");
+            setModalVisible(true);
+          }}
+          style={styles.iconButton}
+        />
+        <Ionicons
+          name="trash"
+          size={20}
+          color="red"
+          onPress={() => deleteTransaction(index)}
+          style={styles.iconButton}
+        />
       </View>
-      <View style={styles.amountRow}>
-        <Text style={styles.creditText}>
-          {item.credit ? `+ BDT ${item.credit}` : ""}
-        </Text>
-        <Text style={styles.debitText}>
-          {item.debit ? `- BDT ${item.debit}` : ""}
-        </Text>
-      </View>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -154,7 +206,13 @@ export default function AccountDetails({ route, navigation }) {
           name="add-circle"
           size={26}
           color="white"
-          onPress={() => setModalVisible(true)}
+          onPress={() => {
+            setEditingIndex(null);
+            setParticular("");
+            setAmount("");
+            setType("credit");
+            setModalVisible(true);
+          }}
         />
       </View>
 
@@ -168,28 +226,30 @@ export default function AccountDetails({ route, navigation }) {
 
       {/* Totals */}
       <View style={styles.balanceRow}>
-        <Text style={styles.creditTotal}>Credit ↑ BDT {credit}</Text>
-        <Text style={styles.debitTotal}>Debit ↓ BDT {debit}</Text>
-        <Text style={styles.balanceTotal}>Balance BDT {balance}</Text>
+        <Text style={styles.creditTotal}>Credit ↑ ৳ {credit.toFixed(2)}</Text>
+        <Text style={styles.debitTotal}>Debit ↓ ৳ {debit.toFixed(2)}</Text>
+        <Text style={styles.balanceTotal}>Balance ৳ {balance.toFixed(2)}</Text>
       </View>
 
       {/* Modal */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modal}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Transaction</Text>
+            <Text style={styles.modalTitle}>
+              {editingIndex !== null ? "Edit Transaction" : "Add Transaction"}
+            </Text>
             <Text style={{ marginBottom: 6 }}>
-              Date: {moment().format("DD MMM YYYY")}
+              Date: {moment(editingIndex !== null ? account.transactions[editingIndex]?.date : new Date()).format("DD MMM YYYY")}
             </Text>
 
             <View style={styles.radioRow}>
               <TouchableOpacity onPress={() => setType("credit")}>
-                <Text>
+                <Text style={styles.radioText}>
                   {type === "credit" ? "●" : "○"} Credit (+)
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setType("debit")}>
-                <Text>
+                <Text style={styles.radioText}>
                   {type === "debit" ? "●" : "○"} Debit (-)
                 </Text>
               </TouchableOpacity>
@@ -199,7 +259,7 @@ export default function AccountDetails({ route, navigation }) {
               style={styles.input}
               placeholder="Amount"
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={(text) => setAmount(text.replace(/[^0-9.]/g, ''))} // Allow only numbers and decimal
               keyboardType="numeric"
             />
             <TextInput
@@ -212,15 +272,17 @@ export default function AccountDetails({ route, navigation }) {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={() => setModalVisible(false)}
+                onPress={resetModal}
               >
-                <Text style={{ color: "#333" }}>CANCEL</Text>
+                <Text style={styles.buttonText}>CANCEL</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.saveButton}
-                onPress={addTransaction}
+                onPress={editingIndex !== null ? editTransaction : addTransaction}
               >
-                <Text style={{ color: "white" }}>ADD</Text>
+                <Text style={[styles.buttonText, { color: "white" }]}>
+                  {editingIndex !== null ? "SAVE" : "ADD"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -232,42 +294,48 @@ export default function AccountDetails({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#6A1B9A",
+    backgroundColor: "#007C00",
     padding: 15,
     elevation: 4,
   },
   headerText: { color: "white", fontSize: 20, fontWeight: "bold" },
-
   transactionCard: {
     backgroundColor: "white",
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
     elevation: 2,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   transactionHeader: {
+    flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 6,
   },
   dateText: { fontSize: 14, color: "#666" },
   particularText: { fontSize: 16, fontWeight: "600", color: "#333" },
-
   amountRow: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
   creditText: { color: "green", fontWeight: "bold" },
   debitText: { color: "red", fontWeight: "bold" },
-
+  transactionActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconButton: { marginLeft: 10 },
   balanceRow: {
     flexDirection: "row",
     justifyContent: "space-around",
+    alignItems: "center",
     padding: 12,
     backgroundColor: "#fff",
     borderTopWidth: 1,
@@ -276,14 +344,13 @@ const styles = StyleSheet.create({
   creditTotal: { color: "green", fontWeight: "bold" },
   debitTotal: { color: "red", fontWeight: "bold" },
   balanceTotal: {
-    backgroundColor: "#6A1B9A",
+    backgroundColor: "#007C00",
     color: "white",
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 8,
     fontWeight: "bold",
   },
-
   modal: {
     flex: 1,
     justifyContent: "center",
@@ -301,12 +368,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 15,
-    color: "#6A1B9A",
+    color: "#007C00",
   },
   radioRow: {
     flexDirection: "row",
     justifyContent: "space-around",
     marginBottom: 20,
+  },
+  radioText: {
+    fontSize: 16,
+    color: "#333",
   },
   input: {
     borderBottomWidth: 1,
@@ -326,9 +397,13 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   saveButton: {
-    backgroundColor: "#6A1B9A",
+    backgroundColor: "#007C00",
     paddingVertical: 10,
     paddingHorizontal: 25,
     borderRadius: 25,
+  },
+  buttonText: {
+    fontWeight: "bold",
+    color: "#333",
   },
 });

@@ -58,7 +58,7 @@ export default function Dashboard({ navigation }) {
               <Ionicons
                 name="pencil"
                 size={20}
-                color="#6A1B9A"
+                color="#007C00"
                 onPress={() => {
                   setEditingAccount(item);
                   setEditAccountName(item.name);
@@ -80,20 +80,20 @@ export default function Dashboard({ navigation }) {
             <View style={[styles.balanceBox, { backgroundColor: "#E3F2FD" }]}>
               <Ionicons name="arrow-up-circle" size={20} color="#2196F3" />
               <Text style={styles.balanceLabel}>Credit</Text>
-              <Text style={styles.balanceValue}>BDT {credit}</Text>
+              <Text style={styles.balanceValue}> {credit}</Text>
             </View>
             <View style={[styles.balanceBox, { backgroundColor: "#FFEBEE" }]}>
               <Ionicons name="arrow-down-circle" size={20} color="#F44336" />
               <Text style={styles.balanceLabel}>Debit</Text>
-              <Text style={styles.balanceValue}>BDT {debit}</Text>
+              <Text style={styles.balanceValue}> {debit}</Text>
             </View>
-            <View style={[styles.balanceBox, { backgroundColor: "#6A1B9A" }]}>
+            <View style={[styles.balanceBox, { backgroundColor: "#007C00" }]}>
               <Ionicons name="wallet" size={20} color="white" />
               <Text style={[styles.balanceLabel, { color: "white" }]}>
                 Balance
               </Text>
               <Text style={[styles.balanceValue, { color: "#FFD700" }]}>
-                BDT {balance}
+                {balance}
               </Text>
             </View>
           </View>
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#6A1B9A",
+    backgroundColor: "#007C00",
     paddingVertical: 15,
     paddingHorizontal: 15,
     elevation: 4,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 15,
-    color: "#6A1B9A",
+    color: "#007C00",
     textAlign: "center",
   },
   input: {
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   cancelText: { fontWeight: "bold", color: "#333" },
   saveButton: {
-    backgroundColor: "#6A1B9A",
+    backgroundColor: "#007C00",
     paddingVertical: 10,
     paddingHorizontal: 25,
     borderRadius: 25,

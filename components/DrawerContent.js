@@ -34,16 +34,16 @@ export default function DrawerContent(props) {
         <View style={styles.balanceBox}>
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Credit (+)</Text>
-            <Text style={styles.balanceValue}>BDT {totals.credit}</Text>
+            <Text style={styles.balanceValue}> ৳ {totals.credit}</Text>
           </View>
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Debit (-)</Text>
-            <Text style={styles.balanceValue}>BDT {totals.debit}</Text>
+            <Text style={styles.balanceValue}> ৳ {totals.debit}</Text>
           </View>
           <View style={styles.balanceItem}>
             <Text style={styles.balanceLabel}>Balance</Text>
             <Text style={[styles.balanceValue, styles.highlightValue]}>
-              BDT {totals.balance}
+               ৳ {totals.balance}
             </Text>
           </View>
         </View>
@@ -51,7 +51,7 @@ export default function DrawerContent(props) {
 
       {/* ===== DRAWER ITEMS ===== */}
       <DrawerItem
-        icon={() => <Ionicons name="home" size={24} color="#6A1B9A" />}
+        icon={() => <Ionicons name="home" size={24} color="#007C00" />}
         label="Home"
         onPress={() => props.navigation.navigate("Dashboard")}
       />
@@ -130,9 +130,10 @@ export default function DrawerContent(props) {
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: "#6A1B9A",
+    backgroundColor: "#007C00",
     paddingVertical: 30,
     alignItems: "center",
+    borderRadius:10
   },
   headerText: {
     color: "white",
