@@ -1,19 +1,20 @@
 import React, { createContext, useState, useEffect } from "react";
+import { StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createStackNavigator } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+
 import DrawerContent from "./components/DrawerContent";
 import Dashboard from "./screens/Dashboard";
 import AccountDetails from "./screens/AccountDetails";
 
-// Create a Context for sharing accounts and updates
 export const AccountsContext = createContext();
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
-// Stack Navigator for Dashboard and related screens
 const DashboardStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Dashboard" component={Dashboard} />
@@ -24,7 +25,6 @@ const DashboardStack = () => (
 export default function App() {
   const [accounts, setAccounts] = useState([]);
 
-  // Load accounts from AsyncStorage on mount
   useEffect(() => {
     const loadAccounts = async () => {
       try {
@@ -37,7 +37,6 @@ export default function App() {
     loadAccounts();
   }, []);
 
-  // Function to update accounts and save to AsyncStorage
   const updateAccounts = async (updatedAccounts) => {
     try {
       await AsyncStorage.setItem("accounts", JSON.stringify(updatedAccounts));
@@ -49,14 +48,25 @@ export default function App() {
 
   return (
     <AccountsContext.Provider value={{ accounts, updateAccounts }}>
-      <NavigationContainer>
-        <Drawer.Navigator
-          drawerContent={(props) => <DrawerContent {...props} />}
-          screenOptions={{ headerShown: false }}
-        >
-          <Drawer.Screen name="Home" component={DashboardStack} />
-        </Drawer.Navigator>
-      </NavigationContainer>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+          <NavigationContainer>
+            <Drawer.Navigator
+              drawerContent={(props) => <DrawerContent {...props} />}
+              screenOptions={{ headerShown: false }}
+            >
+              <Drawer.Screen name="Home" component={DashboardStack} />
+            </Drawer.Navigator>
+          </NavigationContainer>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </AccountsContext.Provider>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff", // adjust if your app uses dark theme
+  },
+});

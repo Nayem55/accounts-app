@@ -69,7 +69,10 @@ export default function AccountDetails({ route, navigation }) {
     }
 
     const updatedTransaction = {
-      date: editingIndex !== null ? account.transactions[editingIndex].date : new Date(), // Preserve original date
+      date:
+        editingIndex !== null
+          ? account.transactions[editingIndex].date
+          : new Date(), // Preserve original date
       particular,
       credit: type === "credit" ? parseFloat(amount) : 0,
       debit: type === "debit" ? parseFloat(amount) : 0,
@@ -137,7 +140,10 @@ export default function AccountDetails({ route, navigation }) {
     (sum, t) => sum + (t.credit || 0),
     0
   );
-  const debit = account.transactions.reduce((sum, t) => sum + (t.debit || 0), 0);
+  const debit = account.transactions.reduce(
+    (sum, t) => sum + (t.debit || 0),
+    0
+  );
   const balance = credit - debit;
 
   const renderTransaction = ({ item, index }) => (
@@ -239,7 +245,12 @@ export default function AccountDetails({ route, navigation }) {
               {editingIndex !== null ? "Edit Transaction" : "Add Transaction"}
             </Text>
             <Text style={{ marginBottom: 6 }}>
-              Date: {moment(editingIndex !== null ? account.transactions[editingIndex]?.date : new Date()).format("DD MMM YYYY")}
+              Date:{" "}
+              {moment(
+                editingIndex !== null
+                  ? account.transactions[editingIndex]?.date
+                  : new Date()
+              ).format("DD MMM YYYY")}
             </Text>
 
             <View style={styles.radioRow}>
@@ -259,7 +270,7 @@ export default function AccountDetails({ route, navigation }) {
               style={styles.input}
               placeholder="Amount"
               value={amount}
-              onChangeText={(text) => setAmount(text.replace(/[^0-9.]/g, ''))} // Allow only numbers and decimal
+              onChangeText={(text) => setAmount(text.replace(/[^0-9.]/g, ""))} // Allow only numbers and decimal
               keyboardType="numeric"
             />
             <TextInput
@@ -278,7 +289,9 @@ export default function AccountDetails({ route, navigation }) {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.saveButton}
-                onPress={editingIndex !== null ? editTransaction : addTransaction}
+                onPress={
+                  editingIndex !== null ? editTransaction : addTransaction
+                }
               >
                 <Text style={[styles.buttonText, { color: "white" }]}>
                   {editingIndex !== null ? "SAVE" : "ADD"}
@@ -334,15 +347,17 @@ const styles = StyleSheet.create({
   iconButton: { marginLeft: 10 },
   balanceRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 16, // space between children
     padding: 12,
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderColor: "#ddd",
   },
-  creditTotal: { color: "green", fontWeight: "bold" },
-  debitTotal: { color: "red", fontWeight: "bold" },
+
+  creditTotal: { color: "green", fontWeight: "bold",textAlign:"center" },
+  debitTotal: { color: "red", fontWeight: "bold",textAlign:"center" },
   balanceTotal: {
     backgroundColor: "#007C00",
     color: "white",
@@ -350,6 +365,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
     fontWeight: "bold",
+    textAlign:"center"
   },
   modal: {
     flex: 1,
